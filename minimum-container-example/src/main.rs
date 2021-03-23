@@ -38,7 +38,7 @@ fn main() -> MyResult {
     let usage = format!("Usage: {} [newroot]", args().nth(0).unwrap());
     let root = args().nth(1).ok_or(usage)?;
 
-    let cb = Box::new(move || {
+    let cb = Box::new(|| {
         if let Err(e) = container_prelude(&root) {
             eprintln!("mount failed: {:?}", e);
             return 127;
