@@ -1,5 +1,6 @@
 [workspace]
 members = [
+  "cloexec-example",
+  "minimum-container-example",
   "worker-example",
-  "minimum-container-example"
 ]
