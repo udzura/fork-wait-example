@@ -4,6 +4,7 @@ use nix::sys::wait::waitpid;
 use nix::unistd::{chroot, execvp};
 use std::env::{args, set_current_dir};
 use std::ffi::CString;
+use std::fs::{create_dir, remove_dir};
 type MyResult = Result<(), Box<dyn std::error::Error>>;
 
 fn mount_make_private() -> Result<(), nix::Error> {
@@ -12,6 +13,16 @@ fn mount_make_private() -> Result<(), nix::Error> {
         "/",
         None::<&str>,
         MsFlags::MS_REC | MsFlags::MS_PRIVATE,
+        None::<&str>,
+    )
+}
+
+fn mount_bind(source: &str, target: &str) -> Result<(), nix::Error> {
+    mount(
+        Some(source),
+        target,
+        None::<&str>,
+        MsFlags::MS_BIND,
         None::<&str>,
     )
 }
@@ -28,6 +39,8 @@ fn mount_proc(source: &str, target: &str) -> Result<(), nix::Error> {
 
 fn container_prelude(root: &str) -> MyResult {
     mount_make_private()?;
+    create_dir(root)?;
+    mount_bind("/", root)?;
     chroot(root)?;
     set_current_dir("/")?;
     mount_proc("proc", "/proc")?;
@@ -40,7 +53,7 @@ fn main() -> MyResult {
 
     let cb = Box::new(|| {
         if let Err(e) = container_prelude(&root) {
-            eprintln!("mount failed: {:?}", e);
+            eprintln!("prelude failed: {:?}", e);
             return 127;
         }
 
@@ -67,6 +80,8 @@ fn main() -> MyResult {
     while let Ok(status) = waitpid(None, None) {
         println!("Exit Status: {:?}", status);
     }
+
+    remove_dir(&root)?;
 
     Ok(())
 }
